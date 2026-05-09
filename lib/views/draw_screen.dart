@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../data/alphabet.dart';
+import '../data/module.dart';
+import '../services/data_logger.dart';
 import '../state/progress_store.dart';
 import '../theme.dart';
 import '../widgets/big_button.dart';
@@ -15,11 +17,13 @@ import 'success_dialog.dart';
 class DrawScreen extends StatefulWidget {
   final String letter;
   final int level;
+  final Module module;
 
   const DrawScreen({
     super.key,
     required this.letter,
     required this.level,
+    this.module = Module.letters,
   });
 
   @override
@@ -37,10 +41,15 @@ class _DrawScreenState extends State<DrawScreen>
   late final AnimationController _demo;
   bool _demoActive = false;
 
-  bool get _isDia => polishDiacritics.contains(widget.letter);
+  int _attemptCount = 0;
+  late DateTime _attemptStart;
 
-  int get _idx => polishAlphabet.indexOf(widget.letter);
-  bool get _hasNext => _idx >= 0 && _idx < polishAlphabet.length - 1;
+  bool get _isDia =>
+      widget.module == Module.letters && polishDiacritics.contains(widget.letter);
+
+  List<String> get _items => widget.module.items;
+  int get _idx => _items.indexOf(widget.letter);
+  bool get _hasNext => _idx >= 0 && _idx < _items.length - 1;
   bool get _hasPrev => _idx > 0;
 
   @override
@@ -50,6 +59,7 @@ class _DrawScreenState extends State<DrawScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     );
+    _attemptStart = DateTime.now();
   }
 
   @override
@@ -58,11 +68,17 @@ class _DrawScreenState extends State<DrawScreen>
     super.dispose();
   }
 
+  void _resetCanvas() {
+    setState(() => points.clear());
+    _attemptStart = DateTime.now();
+  }
+
   void _goToLetter(int newIndex) {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (_) => DrawScreen(
-        letter: polishAlphabet[newIndex],
+        letter: _items[newIndex],
         level: widget.level,
+        module: widget.module,
       ),
     ));
   }
@@ -73,9 +89,21 @@ class _DrawScreenState extends State<DrawScreen>
 
     final hasDrawing = points.any((p) => p != null);
     final score = hasDrawing ? await _scoreDrawing(size) : 0;
+    final elapsed = DateTime.now().difference(_attemptStart).inSeconds;
+    _attemptCount++;
+    unawaited(DataLogger.logAttempt(
+      module: widget.module,
+      item: widget.letter,
+      level: widget.level,
+      attempt: _attemptCount,
+      durationSeconds: elapsed,
+      score: score,
+    ));
     if (score > 0) {
-      ProgressStore.instance.record(widget.letter, widget.level, score);
+      ProgressStore.instance
+          .record(widget.letter, widget.level, score, module: widget.module);
     }
+    _attemptStart = DateTime.now();
     if (!mounted) return;
     showDialog(
       context: context,
@@ -87,7 +115,7 @@ class _DrawScreenState extends State<DrawScreen>
         hasNext: _hasNext,
         onRetry: () {
           Navigator.of(ctx).pop();
-          setState(() => points.clear());
+          _resetCanvas();
         },
         onNext: () {
           Navigator.of(ctx).pop();
@@ -102,6 +130,7 @@ class _DrawScreenState extends State<DrawScreen>
       points.clear();
       _demoActive = true;
     });
+    _attemptStart = DateTime.now();
     _demo.forward(from: 0).whenComplete(() {
       if (mounted) setState(() => _demoActive = false);
     });
@@ -250,9 +279,10 @@ class _DrawScreenState extends State<DrawScreen>
           ),
           const SizedBox(width: 10),
           if (wide) ...[
-            const Text(
-              'Litera',
-              style: TextStyle(
+            Text(
+              widget.module.singularLabel[0].toUpperCase() +
+                  widget.module.singularLabel.substring(1),
+              style: const TextStyle(
                 fontSize: 18,
                 color: AppColors.inkSoft,
                 fontWeight: FontWeight.w500,
@@ -297,7 +327,7 @@ class _DrawScreenState extends State<DrawScreen>
             _PillButton(
               icon: Icons.cleaning_services_rounded,
               label: 'Wyczyść',
-              onTap: () => setState(() => points.clear()),
+              onTap: _resetCanvas,
             ),
           ] else ...[
             _RoundButton(
@@ -307,7 +337,7 @@ class _DrawScreenState extends State<DrawScreen>
             const SizedBox(width: 8),
             _RoundButton(
               icon: Icons.cleaning_services_rounded,
-              onTap: () => setState(() => points.clear()),
+              onTap: _resetCanvas,
             ),
           ],
         ],
