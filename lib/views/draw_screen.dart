@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../data/alphabet.dart';
 import '../data/module.dart';
 import '../services/data_logger.dart';
+import '../state/letter_sound.dart';
 import '../state/progress_store.dart';
 import '../theme.dart';
 import '../widgets/big_button.dart';
@@ -143,6 +144,7 @@ class _DrawScreenState extends State<DrawScreen>
   }
 
   void _goToLetter(int newIndex) {
+    LetterSound.instance.play(_items[newIndex]);
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (_) => DrawScreen(
         letter: _items[newIndex],
