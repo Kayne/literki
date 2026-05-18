@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/alphabet.dart';
+import '../state/letter_sound.dart';
 import '../state/progress_store.dart';
 import '../theme.dart';
 import '../widgets/paper_background.dart';
@@ -228,6 +229,7 @@ class _LetterTileState extends State<_LetterTile>
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () {
+            LetterSound.instance.play(widget.letter);
             Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => LevelSelectScreen(letter: widget.letter),
             ));
