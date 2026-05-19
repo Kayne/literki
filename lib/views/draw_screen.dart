@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../data/alphabet.dart';
 import '../data/module.dart';
 import '../services/data_logger.dart';
+import '../state/letter_sound.dart';
 import '../state/progress_store.dart';
 import '../theme.dart';
 import '../widgets/big_button.dart';
@@ -35,6 +36,7 @@ class _DrawScreenState extends State<DrawScreen>
   static const double _targetFontSize = 380;
   static const double _targetLetterSpacing = 2;
   static const double _scoringStrokeWidth = 25;
+
 
   List<Offset?> points = [];
   Size? _canvasSize;
@@ -68,12 +70,81 @@ class _DrawScreenState extends State<DrawScreen>
     super.dispose();
   }
 
+  double _getLetterSize() {
+    if ( widget.letter == 'f' || widget.letter == 'G' ||
+         widget.letter == 'J' || widget.letter == 'Y'
+    ) {
+      return 300;
+    }
+
+    return _targetFontSize;
+  }
+
+  Offset _getLetterOffset(Size canvasSize, double textWidth, double textHeight) {
+
+    double dx = (canvasSize.width - textWidth) / 2;
+    double dy = (canvasSize.height - textHeight) / 2;
+
+
+
+    if ( widget.letter == 'Ą' || widget.letter == 'Ę') {
+      dy = dy - 30;
+    }
+
+    if ( widget.letter == 'a' || widget.letter == 'm' ||
+         widget.letter == 'c' || widget.letter == 'e' ||
+         widget.letter == 'n' || widget.letter == 'o' ||
+         widget.letter == 'r' || widget.letter == 's' ||
+         widget.letter == 'u' || widget.letter == 'w' ||
+         widget.letter == 'z'
+    ) {
+      dy = dy - 80;
+    }
+
+    if ( widget.letter == 'ę' || widget.letter == 'ą' ||
+         widget.letter == 'j'
+    ) {
+      dy = dy  - 110;
+    }
+
+    if ( widget.letter == 'g' || widget.letter == 'p' ||
+         widget.letter == 'y'
+    ) {
+      dy = dy  - 170;
+    }
+
+    if ( widget.letter == 'f' || widget.letter == "G" ||
+         widget.letter == 'J' || widget.letter == 'Y'
+    ) {
+      dy = dy - 60;
+    }
+
+    if ( widget.letter == 'ć' || widget.letter == 'ń' ||
+         widget.letter == 'ó' || widget.letter == 'ś' ||
+         widget.letter == 't' || widget.letter == 'ź' ||
+         widget.letter == 'ż'
+    ) {
+      dy = dy  - 40;
+    }
+
+    if ( widget.letter == 'Ć' || widget.letter == 'Ń' ||
+         widget.letter == 'Ó' || widget.letter == 'Ś' ||
+         widget.letter == 'Ź' || widget.letter == 'Ż'
+    ) {
+      dy = dy  + 60;
+    }
+
+
+    return Offset(dx, dy);
+  }
+
   void _resetCanvas() {
     setState(() => points.clear());
     _attemptStart = DateTime.now();
   }
 
   void _goToLetter(int newIndex) {
+    LetterSound.instance.play(_items[newIndex]);
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (_) => DrawScreen(
         letter: _items[newIndex],
@@ -185,9 +256,9 @@ class _DrawScreenState extends State<DrawScreen>
     final tp = TextPainter(
       text: TextSpan(
         text: widget.letter,
-        style: const TextStyle(
+        style:  TextStyle(
           fontFamily: 'Handwriting',
-          fontSize: _targetFontSize,
+          fontSize:_getLetterSize(),
           fontWeight: FontWeight.w800,
           color: Colors.black,
           letterSpacing: _targetLetterSpacing,
@@ -195,10 +266,7 @@ class _DrawScreenState extends State<DrawScreen>
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(
-      canvas,
-      Offset((size.width - tp.width) / 2, (size.height - tp.height) / 2),
-    );
+    tp.paint(canvas, _getLetterOffset(size, tp.width, tp.height));
     return recorder
         .endRecording()
         .toImage(size.width.toInt(), size.height.toInt());
@@ -407,52 +475,29 @@ class _DrawScreenState extends State<DrawScreen>
   }
 
   Widget _guideForLevel() {
-    if (widget.level == 1) {
+    if (widget.level == 3) {
       return Center(
-        child: Text(
-          widget.letter,
-          style: TextStyle(
-            fontFamily: 'Handwriting',
-            fontSize: _targetFontSize,
-            fontWeight: FontWeight.w800,
-            height: 1,
-            letterSpacing: _targetLetterSpacing,
-            color: _isDia
-                ? AppColors.diacritic.withValues(alpha: 0.28)
-                : AppColors.guideInk,
+        child: Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: AppColors.inkSoft.withValues(alpha: 0.4),
+            shape: BoxShape.circle,
           ),
         ),
       );
     }
-    if (widget.level == 2) {
-      return Center(
-        child: Text(
-          widget.letter,
-          style: TextStyle(
-            fontFamily: 'Handwriting',
-            fontSize: _targetFontSize,
-            fontWeight: FontWeight.w800,
-            height: 1,
-            letterSpacing: _targetLetterSpacing,
-            foreground: Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 3
-              ..strokeJoin = StrokeJoin.round
-              ..color = (_isDia ? AppColors.diacritic : AppColors.inkSoft)
-                  .withValues(alpha: 0.55),
-          ),
-        ),
-      );
-    }
-    return Center(
-      child: Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(
-          color: AppColors.inkSoft.withValues(alpha: 0.4),
-          shape: BoxShape.circle,
-        ),
+
+
+    return CustomPaint(
+      painter: _TargetLetterPainter(
+        fontSize:_getLetterSize() ,
+        letter: widget.letter,
+        level: widget.level,
+        isDia: _isDia,
+        offsetCalculator: _getLetterOffset,
       ),
+      size: Size.infinite,
     );
   }
 
@@ -709,4 +754,51 @@ class _RoundButton extends StatelessWidget {
       ),
     );
   }
+}
+class _TargetLetterPainter extends CustomPainter {
+  final String letter;
+  final int level;
+  final bool isDia;
+  final double fontSize;
+  final Offset Function(Size, double, double) offsetCalculator;
+
+  _TargetLetterPainter({
+    required this.letter,
+    required this.level,
+    required this.isDia,
+    required this.fontSize,
+    required this.offsetCalculator,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: letter,
+        style: TextStyle(
+          fontFamily: 'Handwriting',
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 2,
+          color: level == 1
+              ? (isDia ? AppColors.diacritic.withValues(alpha: 0.28) : AppColors.guideInk)
+              : null,
+          foreground: level == 2
+              ? (Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..strokeJoin = StrokeJoin.round
+            ..color = (isDia ? AppColors.diacritic : AppColors.inkSoft).withValues(alpha: 0.55))
+              : null,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    tp.paint(canvas, offsetCalculator(size, tp.width, tp.height));
+  }
+
+  @override
+  bool shouldRepaint(covariant _TargetLetterPainter oldDelegate) =>
+      oldDelegate.letter != letter || oldDelegate.level != level;
 }
