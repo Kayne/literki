@@ -132,9 +132,11 @@ contract.
   `debugPrint`s. Don't surface those failures to kids.
 
 ### Letter sounds
-- Use `LetterSound.instance.play(letter)` (singleton, fire-and-forget) —
-  don't instantiate `AudioPlayer` ad-hoc. The singleton stops any
-  in-flight playback so rapid taps cut off cleanly.
+- Use `LetterSound.instance.play(letter)` for letters/digits or
+  `LetterSound.instance.playClip(filename)` for fixed clips like
+  `zaczynamy.wav` (singleton, fire-and-forget) — don't instantiate
+  `AudioPlayer` ad-hoc. The singleton stops any in-flight playback so
+  rapid taps cut off cleanly.
 - Recordings live in `assets/literki_dzwieki/` — uppercase letter WAVs
   (`A.wav`…`Ż.wav`) plus digit WAVs (`0.wav`…`9.wav`). Lowercase taps
   reuse the uppercase file via `toUpperCase()`; digits pass through
@@ -149,6 +151,14 @@ contract.
   `draw_screen._goToLetter` call `LetterSound` unconditionally for
   letters and digits. If a recording goes missing, the call silently
   no-ops rather than crashing.
+- Encouragement clips also live in `assets/literki_dzwieki/`:
+  `zaczynamy.wav` (intro), `sprobuj_jeszcze_raz.wav`,
+  `prawie_sie_udalo.wav`, `swietnie.wav`, `brawo.wav`, `super.wav`,
+  `brawo_swietnie.wav`. The intro fires from `DrawScreen.initState`
+  only when `widget.playIntro == true`; `_goToLetter` flips that to
+  `false` so prev/next navigation doesn't replay it. Score-keyed
+  feedback clips fire from `_check` via `_feedbackClipFor(score)` —
+  keep that mapping in sync if you add a new score band or clip.
 
 ### Layout gating
 `c.maxWidth >= 700` is the agreed phone/tablet breakpoint. If you add a

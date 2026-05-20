@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -19,12 +20,14 @@ class DrawScreen extends StatefulWidget {
   final String letter;
   final int level;
   final Module module;
+  final bool playIntro;
 
   const DrawScreen({
     super.key,
     required this.letter,
     required this.level,
     this.module = Module.letters,
+    this.playIntro = true,
   });
 
   @override
@@ -62,6 +65,9 @@ class _DrawScreenState extends State<DrawScreen>
       duration: const Duration(milliseconds: 2400),
     );
     _attemptStart = DateTime.now();
+    if (widget.playIntro) {
+      LetterSound.instance.playClip('zaczynamy.wav');
+    }
   }
 
   @override
@@ -150,8 +156,28 @@ class _DrawScreenState extends State<DrawScreen>
         letter: _items[newIndex],
         level: widget.level,
         module: widget.module,
+        playIntro: false,
       ),
     ));
+  }
+
+  static final math.Random _rng = math.Random();
+
+  String? _feedbackClipFor(int score) {
+    switch (score) {
+      case 1:
+        return 'sprobuj_jeszcze_raz.wav';
+      case 2:
+      case 3:
+        return 'prawie_sie_udalo.wav';
+      case 4:
+        const pool = ['swietnie.wav', 'brawo.wav', 'super.wav'];
+        return pool[_rng.nextInt(pool.length)];
+      case 5:
+        return 'brawo_swietnie.wav';
+      default:
+        return null;
+    }
   }
 
   Future<void> _check() async {
@@ -176,6 +202,8 @@ class _DrawScreenState extends State<DrawScreen>
     }
     _attemptStart = DateTime.now();
     if (!mounted) return;
+    final clip = _feedbackClipFor(score);
+    if (clip != null) LetterSound.instance.playClip(clip);
     showDialog(
       context: context,
       barrierColor: Colors.transparent,

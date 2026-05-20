@@ -102,9 +102,23 @@ grid plays the corresponding WAV via
 [`audioplayers`](https://pub.dev/packages/audioplayers), routed through
 the `LetterSound` singleton in `lib/state/letter_sound.dart`. The same
 sound also plays when the child cycles letters/digits with
-**Poprzednia** / **Następna** in the drawing screen. Calls are
-fire-and-forget — playback errors are swallowed so a missing recording
-never blocks navigation.
+**Poprzednia** / **Następna** in the drawing screen.
+
+Beyond per-item names, a small set of **encouragement clips** also live
+in the same folder and play through `LetterSound.playClip(name)`:
+
+- `zaczynamy.wav` — fires once when the drawing screen first opens for
+  a chosen letter/digit. Suppressed on prev/next navigation between
+  items (controlled by `DrawScreen(playIntro: false)`).
+- After **Sprawdź**, a clip plays based on the score:
+  - 1★ → `sprobuj_jeszcze_raz.wav`
+  - 2★, 3★ → `prawie_sie_udalo.wav`
+  - 4★ → random from `swietnie.wav` / `brawo.wav` / `super.wav`
+  - 5★ → `brawo_swietnie.wav`
+  - 0★ (empty canvas) → silent
+
+Calls are fire-and-forget — playback errors are swallowed so a missing
+recording never blocks navigation.
 
 Filenames must be in Unicode **NFC** (precomposed) form: `Ą` = `U+0104`,
 not `A` + combining ogonek. macOS sometimes returns NFD when listing

@@ -10,12 +10,15 @@ class LetterSound {
   final AudioPlayer _player = AudioPlayer();
 
   Future<void> play(String letter) async {
-    final file = 'assets/literki_dzwieki/${letter.toUpperCase()}.wav';
+    await playClip('${letter.toUpperCase()}.wav');
+  }
+
+  Future<void> playClip(String filename) async {
     try {
       await _player.stop();
-      await _player.play(AssetSource(file));
+      await _player.play(AssetSource('assets/literki_dzwieki/$filename'));
     } catch (_) {
-      // Silently ignore — letter sound is a nice-to-have.
+      // Silently ignore — sound is a nice-to-have.
     }
   }
 }
