@@ -94,15 +94,17 @@ The app has six screens:
 
 ## Letter sounds
 
-Each Polish letter has a recorded pronunciation under
-`assets/literki_dzwieki/` (e.g. `Ą.wav`, `Ł.wav`, `Ż.wav` — uppercase WAV
-per letter; lowercase taps reuse the same file via `toUpperCase()`).
-Tapping a letter tile on the home grid plays the corresponding WAV via
+Every letter **and** digit has a recorded pronunciation under
+`assets/literki_dzwieki/` (e.g. `Ą.wav`, `Ł.wav`, `Ż.wav`, `0.wav`…`9.wav`
+— uppercase WAV per letter, plain digits for numbers; lowercase taps
+reuse the same file via `toUpperCase()`). Tapping a tile on the home
+grid plays the corresponding WAV via
 [`audioplayers`](https://pub.dev/packages/audioplayers), routed through
-the `LetterSound` singleton in `lib/state/letter_sound.dart`. Calls are
+the `LetterSound` singleton in `lib/state/letter_sound.dart`. The same
+sound also plays when the child cycles letters/digits with
+**Poprzednia** / **Następna** in the drawing screen. Calls are
 fire-and-forget — playback errors are swallowed so a missing recording
-never blocks navigation. Digits do not have recordings yet, so the
-**Cyfry** module is silent on tap.
+never blocks navigation.
 
 Filenames must be in Unicode **NFC** (precomposed) form: `Ą` = `U+0104`,
 not `A` + combining ogonek. macOS sometimes returns NFD when listing

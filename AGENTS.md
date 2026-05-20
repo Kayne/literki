@@ -135,18 +135,20 @@ contract.
 - Use `LetterSound.instance.play(letter)` (singleton, fire-and-forget) —
   don't instantiate `AudioPlayer` ad-hoc. The singleton stops any
   in-flight playback so rapid taps cut off cleanly.
-- Recordings live in `assets/literki_dzwieki/` as **uppercase WAVs only**
-  (`A.wav`…`Ż.wav`); lowercase letters reuse the file via `toUpperCase()`.
+- Recordings live in `assets/literki_dzwieki/` — uppercase letter WAVs
+  (`A.wav`…`Ż.wav`) plus digit WAVs (`0.wav`…`9.wav`). Lowercase taps
+  reuse the uppercase file via `toUpperCase()`; digits pass through
+  unchanged.
 - Filenames must be Unicode **NFC** (e.g. `Ą` = `U+0104`, single
   codepoint). macOS may hand back NFD when listing dirs — verify with
   `ls assets/literki_dzwieki | xxd` after adding files, otherwise the
   asset bundle won't resolve them at runtime.
 - Playback errors are silently swallowed — sound is a nice-to-have, not
   a blocker. Don't wire it into navigation flow control.
-- Only **letters** have sounds today. Digits (`Module.numbers`) are
-  silent. If you add digit recordings, drop them in the same folder and
-  the existing tile tap will pick them up (the home grid calls
-  `LetterSound` for both modules).
+- Both modules play: `home_screen._LetterTile.onTap` and
+  `draw_screen._goToLetter` call `LetterSound` unconditionally for
+  letters and digits. If a recording goes missing, the call silently
+  no-ops rather than crashing.
 
 ### Layout gating
 `c.maxWidth >= 700` is the agreed phone/tablet breakpoint. If you add a
